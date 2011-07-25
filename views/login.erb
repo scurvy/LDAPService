@@ -9,5 +9,6 @@
 &nbsp;&nbsp;<a href="<%= options[:forgot_link] -%>" id="forgot">I forgot my password</a>
 </td></tr>
     </table>
-    <input type="hidden" name="action" value="login"> 
+    <input type="hidden" name="action" value="login">
+    <input type="hidden" name="_session_id" value="<%= $session.session_id.to_s -%>">
 </form>

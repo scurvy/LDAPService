@@ -29,7 +29,7 @@ end
 
 #renderfarm
 def renderfarm(erbfile = 'login.erb', options = {})
-  config = loadConfig('../configuration.yaml')     
+  config = loadConfig('../config/config.yaml')     
   output = header(config, options)                 
   output += content(config, erbfile, options)      
   output += footer(config, options)                

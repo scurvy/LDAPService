@@ -1,117 +1,85 @@
 
+require 'rubygems'
 require 'utils'
-require 'ldap'
+require 'net/ldap'
 require 'pp'
 
 
 class LdapConnection 
-  
-   def initialize()
-     config = loadConfig('../configuration.yaml')
-     @ldapconf = config['LDAPInfo']
-     #TODO arbitrate SSL vs nonSSL
-     begin
-       if @ldapconf['SSL'] == true
-         @conn = LDAP::SSLConn.new(@ldapconf['Host'], 636) 
-       else
-         @conn = LDAP::Conn.new(@ldapconf['Host']) 
-       end
-     rescue LDAP::ResultError
-       raise LDAP::ResultError, "Error Connecting to LDAP Server", caller
-     end
-   end
 
-   def add(dn, attrs)
-     @bound.add(dn, attrs)
-   end
-  
-   def login(user, pw)
-     dn = getDN(user)
-     if pw.nil? or pw == ''
-       raise LDAP::ResultError, "Password is blank", caller
-     end
-     begin
-       @bound = @conn.bind(dn,  pw) 
-     rescue LDAP::ResultError => boom
-       raise LDAP::ResultError, "Login =>  #{boom}", caller
-       return false
-     end
-     return true
-   end
+  def initialize()
+    @ldapconf = $config['LDAPInfo']
+  end
 
-   def findNextUIDNumber(start_range = -1 )
-     max = -1
-     @bound.search(@ldapconf['BaseDN'], LDAP::LDAP_SCOPE_SUBTREE, "(uidNumber=*)", 'uidNumber') do |uidNumber|
-      uid = uidNumber['uidNumber'][0].to_i
-         if uid > max
-            max=uid
-        end
-     end
-     return max+1 if max+1 > start_range.to_i
-     start_range
-   end
+  def initialize_ldap_con(ldap_user, ldap_password)
+    options = { :host => @ldapconf['Host'] }
+    options.merge!(:encryption => :simple_tls, :port => 636 ) if @ldapconf['SSL']
+    options.merge!(:auth => { :method => :simple, :username => ldap_user, :password => ldap_password }) unless ldap_user.empty? && ldap_password.empty?
+    Net::LDAP.new options
+  end
 
-   # This seems buggy.  Like it would return one result, even though there are many
-   def getUsers()
-     @bound.search(@ldapconf['BaseDN'], LDAP::LDAP_SCOPE_SUBTREE, "(uid=*)") do |user|
-       return user
-     end
-   end
+  def authenticate(login, password)
+    attrs = get_user_dn(login)
+    if attrs && attrs[:dn] && authenticate_dn(attrs[:dn], password)
+      return true
+    else
+      return false
+    end
+  rescue  Net::LDAP::LdapError => text
+    raise "LdapError: " + text
+  end
 
-   def getEntryByMail(mail)
-     @bound.search(@ldapconf['BaseDN'], LDAP::LDAP_SCOPE_SUBTREE, "(mail=#{mail})") do |user|
-       return user.to_hash
-     end
-     raise LDAP::ResultError, "No entry with mail #{mail} found", caller
-   end
-  
-   def getUserEntry(uid)
-     @bound.search(@ldapconf['BaseDN'], LDAP::LDAP_SCOPE_SUBTREE, "(uid=#{uid})") do |user|
-         return user.to_hash
-     end
-     raise LDAP::ResultError, "No entry with uid #{uid} found", caller
-   end
+  def authenticate_dn(dn, password)
+    initialize_ldap_con(dn, password).bind unless dn.empty? && ldap_password.empty?
+  end
 
-   def update(user, options)
-     dn =  getDN(user)
-     begin 
-       return @bound.modify(dn, options)
-     rescue LDAP::ResultError => boom
-       raise LDAP::ResultError, boom.to_s, caller 
-     return false
-     end
-   end
+  def get_user_dn(login)
+    user = login.strip.downcase
+    ldap_con = initialize_ldap_con('','')
+    login_filter = Net::LDAP::Filter.eq( "uid", user ) 
+    object_filter = Net::LDAP::Filter.eq( "objectClass", "shadowaccount" ) 
+    attrs = {}
+    ldap_con.search( :base => @ldapconf['PeopleOU'], 
+                     :filter => object_filter & login_filter, 
+                     :attributes=> ['dn']) do |entry|
+        attrs = {:dn => entry.dn}
+    end
+    return attrs
+  end
 
-   def unbind()
-     return @bound.unbind
-   end
-   def bound?()
-     return @bound.bound?
-   end
+  def getUserEntry(login)
+    user = login.strip.downcase
+    ldap_con = initialize_ldap_con('','')
+    login_filter = Net::LDAP::Filter.eq( "uid", user ) 
+    object_filter = Net::LDAP::Filter.eq( "objectClass", "shadowaccount" ) 
+    attrs = {}
+    entries = ldap_con.search( :base => @ldapconf['PeopleOU'], :filter => object_filter & login_filter ) 
+    if entries.length == 0
+      raise StandardError, "ERROR: no such user"
+      return nil
+    else 
+      return entries[0]
+    end
+  end
 
-   def getDN(user)
-     unless user =~ /dc=/ 
-     #  #TODO fix hard-coded ou=people
-      dn = 'uid=' + user + ',ou=people,' + @ldapconf['BaseDN']
-     else
-      dn = user
-     end
-     return dn
-   end
-
-   def delete(user)
-     dn =  getDN(user)
-     begin 
-       return @bound.delete(dn)
-     rescue LDAP::ResultError => boom
-       raise LDAP::ResultError, boom.to_s, caller 
-       return false
-     end
-     return true
-   end
+  def update(user, password, options)
+    dn = get_user_dn(user)[:dn]
+    begin
+      ldap_con = initialize_ldap_con(dn,password)
+      options.each do | k , v|
+        val = v[0]
+        val = '' if val == nil
+        ldap_con.replace_attribute(dn.to_s,k.to_s.strip,val.to_s.strip)
+      end
+    rescue StandardError => boom
+      raise boom, caller
+    rescue  Net::LDAP::LdapError => text
+      raise "LdapError: " + text, caller
+    end
+    return true
+  end
 end
 
-#TODO handle if password is not defined in either spot
 def password_check( yamls )
   # Check to see if it's defined in an ENV var
   password = ""

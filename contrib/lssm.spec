@@ -27,10 +27,10 @@ as long as they have an account in LDAP.  See README.
 
 %install
 rm -rf $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT/srv/lssm/{src,style,views}
+mkdir -p $RPM_BUILD_ROOT/srv/lssm/{src,pub,views}
 cp -pr src/* $RPM_BUILD_ROOT/srv/lssm/src
 cp -pr views/* $RPM_BUILD_ROOT/srv/lssm/views
-cp -pr style/* $RPM_BUILD_ROOT/srv/lssm/style
+cp -pr pub/* $RPM_BUILD_ROOT/srv/lssm/pub
 mkdir -p $RPM_BUILD_ROOT/%{_sysconfdir}/lssm
 cp -pr configuration.yaml $RPM_BUILD_ROOT/%{_sysconfdir}/lssm
 pushd $RPM_BUILD_ROOT/srv/lssm

@@ -15,7 +15,7 @@ def start_webrick(config = {})
   server = HTTPServer.new(config)
   # If you ever create any more paths, you might need to mount them here
   server.mount('/', HTTPServlet::CGIHandler, File.join(Dir.pwd, "/src/index.rb") ) 
-  server.mount('/style', HTTPServlet::FileHandler, File.join(Dir.pwd, "/style") ) 
+  server.mount('/pub', HTTPServlet::FileHandler, File.join(Dir.pwd, "/pub") ) 
 
   yield server if block_given?
   ['INT', 'TERM'].each do |signal|
@@ -30,3 +30,4 @@ start_webrick(:DocumentRoot => File.join(Dir.pwd, "/src"),
               #:SSLVerifyClient  => OpenSSL::SSL::VERIFY_NONE,  
               #:SSLCertName    => [ [ "CN", WEBrick::Utils::getservername  + '.' + value] ],
               :Port => 4443 )
+

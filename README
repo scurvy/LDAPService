@@ -1,5 +1,27 @@
-LDAPService
--------------
+LDAPService (mine)
+------------------
+
+This is forked from the LSSM written by Michael Stahnke. His version was posted on GitHub in a
+non-working state. It looked decent, so I forked it and got it working. My version uses a better
+LDAP library and at least the user self-edit stuff works. I might deal with the password reset
+interface later and get that working. Right now, it's not a use-case for my job so I didn't 
+spend any time on it.
+
+Just so we get this clear, he did a lot of the heavy lifting (and looks like borrowed stuff from
+other people, too). I just got it going again. You can run this stuff out of webrick now by running
+helpers/server.rb. It should do OK for most moderately sized places. After all, how often are
+users going to be making edits? My version uses the Ruby in-memory session DB, so it will fail
+using multiple mongrel or unicorn procs. I wouldn't bother with his setup steps. Just clone this
+repo, install the deps, and run the process via daemontools or init. 
+
+This version requires Ruby, rubygems, ruby-net-ldap gem. That and you'll have to rename the config
+file in config to config.yaml.example after you've customized it for your environment.
+
+Here follow's Michael's original read me:
+
+LDAPService (original)
+----------------------
+
 LDAP Self Service Manager or lssm as I am currently calling it, is a tool to allow for user
 self-management and password recovery based a fairly typical LDAP setup.
 

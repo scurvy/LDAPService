@@ -68,10 +68,10 @@ end
 
 "Create a CHROOTed install primarily used for Debain package builds."
 task :tgz do
-  sh "mkdir -p #{CHROOT}/srv/lssm/{src,style,views}"
+  sh "mkdir -p #{CHROOT}/srv/lssm/{pub,src,views}"
   sh "cp -pr src/* #{CHROOT}/srv/lssm/src"
   sh "cp -pr views/* #{CHROOT}/srv/lssm/views"
-  sh "cp -pr style/* #{CHROOT}/srv/lssm/style"
+  sh "cp -pr pub/* #{CHROOT}/srv/lssm/pub"
   sh "mkdir -p #{CHROOT}/etc/lssm"
   sh "cp -pr configuration.yaml #{CHROOT}/etc/lssm"
   sh "pushd #{CHROOT}/srv/lssm; ln -s ../../etc/lssm/configuration.yaml  .; popd"

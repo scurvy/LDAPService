@@ -23,7 +23,7 @@ end
 
 def resetMail(to, options = {} )
   #  Get from , from_alias, from YAML
-  config = loadConfig('../configuration.yaml')
+  config = loadConfig('../config/config.yaml')
   options[:from] =  config['PWReset']['FromAddress']
   options[:from_alias] = config['PWReset']['FromAlias']
   options[:site] = config['Site']
