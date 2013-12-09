@@ -1,7 +1,8 @@
 
 require 'rubygems'
-require 'utils'
+gem 'ruby-net-ldap', '= 0.0.4'
 require 'net/ldap'
+require 'utils'
 require 'pp'
 
 
